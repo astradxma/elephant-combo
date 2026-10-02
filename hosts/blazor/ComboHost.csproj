@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- e2e host. Versions track Elephant's WebUI: net9.0, Radzen.Blazor as resolved in
+       its packages.lock.json. Bump these when Elephant does. -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ComboHost</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Radzen.Blazor" Version="5.9.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The component under test, compiled from the repo's copy, not a fork. -->
+    <Compile Include="../../blazor/*.cs" Link="Combo/%(Filename)%(Extension)" />
+    <Content Include="../../blazor/*.razor" Link="Combo/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

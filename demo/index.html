@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Combo Lab</title>
+<!-- Every variant of <elephant-combo> on one page. `npm run demo`, then open /demo/.
+     All data is made up and deterministic (seeded), so a reload shows the same rows. -->
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 0; background: #f8fafc; color: #111; }
+  header { padding: 16px 24px 8px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  header p { margin: 0; color: #555; }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; padding: 16px 24px 48px; }
+  section { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; }
+  h2 { font-size: 14px; margin: 0 0 2px; }
+  .what { color: #666; font-size: 12px; margin: 0 0 8px; }
+  pre { background: #f5f5f5; padding: 6px 8px; margin: 8px 0 0; font-size: 11px; white-space: pre-wrap;
+        max-height: 120px; overflow: auto; }
+  /* Radzen's .rz-body: an identity transform + clipping. position:fixed would
+     anchor to this box; the top-layer popover must not care. */
+  .trap { transform: matrix(1,0,0,1,0,0); overflow: hidden; height: 48px; border: 1px dashed #c00; padding: 6px; }
+  /* renderOption demo styles live in the light DOM; the hook returns light-DOM-styled
+     nodes, so they need inline styles or ::part — inline here. */
+</style>
+<script type="module" src="../src/elephant-combo.js"></script>
+</head>
+<body>
+<header>
+  <h1>&lt;elephant-combo&gt; lab</h1>
+  <p>Every variant below is the same element with a different <code>config</code>. Made-up strain data, 1,000–2,000 rows each (plus one 50,000-row server-search case). Try multi-word searches: <code>pseudo mdr</code>, <code>kleb 12</code>, <code>atcc aur</code>.</p>
+</header>
+<main>
+  <section><h2>1 · Single select</h2><p class="what">1,500 rows · <code>{ max: 1 }</code></p>
+    <elephant-combo id="single" style="width: 100%"></elephant-combo><pre id="single-out"></pre></section>
+
+  <section><h2>2 · Single + custom value</h2><p class="what">1,200 rows · <code>{ max: 1, allowCustom: true }</code> — type something that doesn't exist</p>
+    <elephant-combo id="custom" style="width: 100%"></elephant-combo><pre id="custom-out"></pre></section>
+
+  <section><h2>3 · Multi select</h2><p class="what">2,000 rows · <code>{}</code> (unbounded)</p>
+    <elephant-combo id="multi" style="width: 100%"></elephant-combo><pre id="multi-out"></pre></section>
+
+  <section><h2>4 · Multi select, max 3</h2><p class="what">1,000 rows · <code>{ max: 3 }</code></p>
+    <elephant-combo id="multi3" style="width: 100%"></elephant-combo><pre id="multi3-out"></pre></section>
+
+  <section><h2>5 · Include + exclude (tri-state)</h2><p class="what">1,800 rows · <code>{ states: ["include","exclude"] }</code> — click cycles neutral → + → − → neutral</p>
+    <elephant-combo id="tri" style="width: 100%"></elephant-combo><pre id="tri-out"></pre></section>
+
+  <section><h2>6 · Exclude only</h2><p class="what">1,000 rows · <code>{ states: ["exclude"] }</code> — "everything except…"</p>
+    <elephant-combo id="excl" style="width: 100%"></elephant-combo><pre id="excl-out"></pre></section>
+
+  <section><h2>7 · Formatting via JSON: swatch + badges</h2><p class="what">1,500 rows · per-item <code>swatch</code>, <code>badges</code> (badge text is searchable: try <code>mdr</code>, <code>bsl-2</code>) · tri-state</p>
+    <elephant-combo id="json" style="width: 100%"></elephant-combo><pre id="json-out"></pre></section>
+
+  <section><h2>8 · Formatting via JS: renderOption</h2><p class="what">1,500 rows · <code>el.renderOption = (o, {state}) =&gt; Node</code> — free-form row, fed by <code>o.data</code> · multi</p>
+    <elephant-combo id="hook" style="width: 100%"></elephant-combo><pre id="hook-out"></pre></section>
+
+  <section><h2>9 · Server search (simulated)</h2><p class="what">50,000 rows behind <code>search: (q, signal) =&gt; …</code> with 150 ms fake latency · single</p>
+    <elephant-combo id="server" style="width: 100%"></elephant-combo><pre id="server-out"></pre></section>
+
+  <section><h2>10 · Inside a transformed, clipped box</h2><p class="what">1,000 rows · the popup must escape the dashed box (Radzen's <code>.rz-body</code> trap)</p>
+    <div class="trap"><elephant-combo id="trap" style="width: 100%"></elephant-combo></div><pre id="trap-out"></pre></section>
+</main>
+<script type="module">
+  // ── deterministic made-up data ──
+  let seed = 42;
+  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  const pick = (xs) => xs[Math.floor(rnd() * xs.length)];
+  const orgs = [
+    ["PA", "Pseudomonas aeruginosa", "#16a34a"], ["KP", "Klebsiella pneumoniae", "#2563eb"],
+    ["SA", "Staphylococcus aureus", "#d97706"], ["EC", "Escherichia coli", "#7c3aed"],
+    ["AB", "Acinetobacter baumannii", "#db2777"], ["NG", "Neisseria gonorrhoeae", "#0891b2"],
+    ["EF", "Enterococcus faecium", "#65a30d"], ["BS", "Bacillus subtilis", "#64748b"],
+  ];
+  const sources = ["ATCC", "DSMZ", "CDC AR Bank", "clinical isolate", "in-house", "NCTC", "BEI"];
+  const sites = ["blood", "urine", "sputum", "wound", "CSF", "stool", "environmental"];
+  const res = [["MDR", "red"], ["XDR", "red"], ["ESBL", "amber"], ["CRE", "red"], ["MRSA", "amber"], ["susceptible", "green"]];
+
+  function strains(n) {
+    seed = 42 + n; // same n → same rows
+    return Array.from({ length: n }, (_, i) => {
+      const [code, org, colour] = pick(orgs);
+      const num = String(i + 1).padStart(4, "0");
+      const src = pick(sources), site = pick(sites);
+      const r = rnd() < 0.55 ? [pick(res)] : [];
+      const bsl = org.startsWith("Bacillus") ? null : (rnd() < 0.8 ? "BSL-2" : "BSL-1");
+      const mic = Math.round(2 ** (rnd() * 8 - 2) * 100) / 100;
+      return {
+        id: `${code}-${num}`,
+        label: `${code}-${num}`,
+        description: `${org} · ${src} · ${site}`,
+        atoms: [`${code}${num}`],
+        swatch: colour,
+        badges: [...r.map(([t, tone]) => ({ text: t, tone })), ...(bsl ? [{ text: bsl, tone: bsl === "BSL-2" ? "amber" : "gray" }] : [])],
+        data: { org, src, site, mic, colour, resistance: r.map(([t]) => t) },
+        ghost: rnd() < 0.01,
+      };
+    });
+  }
+  // Plain rows: no formatting fields, as a CSV source would give.
+  const plain = (n) => strains(n).map(({ id, label, description, atoms, ghost }) => ({ id, label, description, atoms, ghost }));
+
+  const wire = (id, config, options, selection) => {
+    const el = document.getElementById(id), out = document.getElementById(`${id}-out`);
+    el.config = config; el.options = options; if (selection) el.selection = selection;
+    out.textContent = `selection: ${JSON.stringify(el.selection)}`;
+    el.addEventListener("combo-change", (e) => {
+      out.textContent = `reason: ${e.detail.reason}\nselection: ${JSON.stringify(e.detail.selection)}\nitems: ${JSON.stringify(e.detail.items)}`;
+    });
+    return el;
+  };
+
+  wire("single", { max: 1, placeholder: "Strain…" }, plain(1500), { include: ["PA-0007"] });
+  wire("custom", { max: 1, allowCustom: true, placeholder: "Strain or new name…" }, plain(1200));
+  wire("multi", { placeholder: "Strains…" }, plain(2000), { include: ["KP-0012", "SA-0100"] });
+  wire("multi3", { max: 3, placeholder: "Pick up to 3…" }, plain(1000));
+  wire("tri", { states: ["include", "exclude"], placeholder: "Filter strains…" }, plain(1800),
+       { include: ["PA-0001"], exclude: ["PA-0002"] });
+  wire("excl", { states: ["exclude"], placeholder: "Exclude…" }, plain(1000));
+  wire("json", { states: ["include", "exclude"], placeholder: "Filter strains…" }, strains(1500));
+
+  // renderOption: a two-line row built from o.data — organism in italics, a MIC bar.
+  const hook = wire("hook", { placeholder: "Strains…" }, strains(1500).map(({ badges, swatch, ...o }) => o));
+  hook.renderOption = (o, { state }) => {
+    const d = o.data, wrap = document.createElement("div");
+    wrap.style.cssText = "display:grid;grid-template-columns:72px 1fr 64px;align-items:center;gap:8px;font-size:13px";
+    const id = document.createElement("code"); id.textContent = o.label;
+    id.style.cssText = `color:${d.colour};font-weight:600`;
+    const mid = document.createElement("div");
+    mid.style.cssText = "min-width:0;line-height:1.25";
+    const org = document.createElement("i"); org.textContent = d.org;
+    org.style.cssText = "display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+    const sub = document.createElement("small"); sub.textContent = `${d.src} · ${d.site}${d.resistance.length ? " · " + d.resistance.join(", ") : ""}`;
+    sub.style.cssText = `display:block;color:${d.resistance.length ? "#b91c1c" : "#888"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis`;
+    mid.append(org, sub);
+    const bar = document.createElement("div"); bar.title = `MIC ${d.mic} µg/mL`;
+    bar.style.cssText = "height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden";
+    const fill = document.createElement("div");
+    fill.style.cssText = `height:100%;width:${Math.min(100, (Math.log2(d.mic) + 2) / 8 * 100)}%;background:${d.mic > 8 ? "#dc2626" : "#16a34a"}`;
+    bar.append(fill);
+    wrap.append(id, mid, bar);
+    return wrap;
+  };
+
+  // Server search: the element debounces, aborts stale requests, and re-filters what comes back.
+  const big = plain(50000);
+  const { indexOptions, filterIndex } = await import("../src/elephant-combo.js");
+  const bigIndex = indexOptions(big.map((o) => ({ ...o, atoms: o.atoms || [] })));
+  wire("server", {
+    max: 1, placeholder: "One of 50,000…",
+    search: (q, signal) => new Promise((resolve, reject) => {
+      const t = setTimeout(() => {
+        const hits = filterIndex(bigIndex, q);
+        resolve({ options: hits.slice(0, 50), hasMore: hits.length > 50 });
+      }, 150);
+      signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("aborted", "AbortError")); });
+    }),
+  }, []);
+
+  wire("trap", { max: 1, placeholder: "Strain…" }, plain(1000));
+</script>
+</body>
+</html>

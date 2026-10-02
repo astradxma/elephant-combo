@@ -1,0 +1,13 @@
+@page "/grid"
+<h3>Grid</h3>
+@* An editable grid cell: the grid's scroll container clips its content. *@
+<RadzenDataGrid Data="Strains.Kinds" TItem="(string Id, ComboConfig Config, int Rows)" Style="height: 360px; width: 640px">
+    <Columns>
+        <RadzenDataGridColumn TItem="(string Id, ComboConfig Config, int Rows)" Title="Kind" Width="90px">
+            <Template Context="k">@k.Id</Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="(string Id, ComboConfig Config, int Rows)" Title="Value">
+            <Template Context="k"><ComboSlot Kind="@k.Id" /></Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>

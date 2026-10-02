@@ -1,0 +1,16 @@
+@inherits LayoutComponentBase
+@* Elephant's shell: RadzenLayout + header + sidebar + body. .rz-body is the box
+   with a transform and overflow that a position:fixed popup would get trapped in. *@
+<RadzenLayout>
+    <RadzenHeader><span style="padding: 0 12px">combo host</span></RadzenHeader>
+    <RadzenSidebar Expanded="true">
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Page" Path="/" />
+            <RadzenPanelMenuItem Text="Dialog" Path="/dialog" />
+            <RadzenPanelMenuItem Text="Grid" Path="/grid" />
+        </RadzenPanelMenu>
+    </RadzenSidebar>
+    <RadzenBody>@Body</RadzenBody>
+</RadzenLayout>
+@* As in Elephant: the interactive RadzenDialog is the one in the layout; App.razor's is static. *@
+<RadzenDialog />

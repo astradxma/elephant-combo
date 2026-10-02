@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Combo Fixture</title>
+<!-- e2e host: the five fixture combos, framework-free. ?layout=plain|clipped.
+     `clipped` puts each combo in Radzen's .rz-body trap: a transform (which makes
+     position:fixed anchor to the box) plus overflow:hidden. -->
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 16px; background: #fff; }
+  .slot { margin: 0 0 12px; width: 420px; }
+  .clipped .slot { transform: matrix(1,0,0,1,0,0); overflow: hidden; height: 72px; border: 1px dashed #c00; padding: 4px; }
+  pre { margin: 4px 0 0; font-size: 11px; }
+</style>
+<script type="module" src="../../src/elephant-combo.js"></script>
+</head>
+<body>
+<div id="slots"></div>
+<script type="module">
+  import { KINDS, strains } from "./data.js";
+  const layout = new URLSearchParams(location.search).get("layout") || "plain";
+  const host = document.getElementById("slots");
+  host.className = layout;
+  for (const [id, config, n] of KINDS) {
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.innerHTML = `<elephant-combo id="${id}" style="width:100%"></elephant-combo>
+      <pre data-out="${id}"></pre>
+      <button data-set="${id}">set</button> <button data-replace="${id}">replace</button>`;
+    host.append(slot);
+    const el = slot.querySelector("elephant-combo"), out = slot.querySelector("pre");
+    const show = (sel) => { out.textContent = JSON.stringify(sel); };
+    el.config = config; el.options = strains(n); show(el.selection);
+    el.addEventListener("combo-change", (e) => show(e.detail.selection));
+    // Host-driven changes, as a framework would make them.
+    slot.querySelector("[data-set]").onclick = () => { el.selection = { include: ["PA-0001"], exclude: [] }; show(el.selection); };
+    slot.querySelector("[data-replace]").onclick = () => { el.options = strains(10); };
+  }
+  document.body.dataset.ready = "1";
+</script>
+</body>
+</html>

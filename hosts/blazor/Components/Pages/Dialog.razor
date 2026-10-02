@@ -1,0 +1,15 @@
+@page "/dialog"
+@inject DialogService Dialogs
+<h3>Dialog</h3>
+<RadzenButton Text="Open dialog" id="open-dialog" Click="Open" />
+<p id="dialog-closed">@(_closed ? "closed" : "")</p>
+
+@code {
+    private bool _closed;
+    private async Task Open()
+    {
+        _closed = false;
+        await Dialogs.OpenAsync<ComboSet>("Combos", options: new DialogOptions { Width = "520px", Height = "460px" });
+        _closed = true;
+    }
+}

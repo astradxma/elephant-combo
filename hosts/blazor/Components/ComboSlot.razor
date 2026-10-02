@@ -1,0 +1,30 @@
+@* One fixture combo + what .NET believes the selection is. `data-out` changes
+   only after a commit has round-tripped through OnChange. *@
+@using System.Text.Json
+<div class="slot" style="margin: 0 0 12px; width: 420px">
+    <ElephantCombo id="@Kind" style="width: 100%" Options="_options" Config="_config"
+                   Selection="_selection" OnChange="OnChange" />
+    <pre data-out="@Kind" style="margin: 4px 0 0; font-size: 11px">@JsonSerializer.Serialize(_selection, Web)</pre>
+    <button data-set="@Kind" @onclick="() => _selection = ComboSelection.Of(Strains.Make(1)[0].Id)">set</button>
+    <button data-replace="@Kind" @onclick="() => _options = Strains.Make(10)">replace</button>
+    <button data-bump="@Kind" @onclick="() => _bumps++">bump @_bumps</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required string Kind { get; set; }
+
+    static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
+    private IReadOnlyList<ComboOption> _options = [];
+    private ComboConfig _config = ComboConfig.Single;
+    private ComboSelection _selection = ComboSelection.Empty;
+    private int _bumps;
+
+    protected override void OnInitialized()
+    {
+        var k = Strains.Kinds.First(k => k.Id == Kind);
+        _config = k.Config;
+        _options = Strains.Make(k.Rows);
+    }
+
+    private void OnChange(ComboChange c) => _selection = c.Selection;
+}
