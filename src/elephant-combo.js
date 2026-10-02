@@ -580,7 +580,10 @@ export class ElephantCombo extends Base {
     const min = this._cfg.allowCustom ? -1 : 0;
     const move = (to) => { this._highlight = to; this._scrollToHighlight(); this._renderRows(); };
     switch (e.key) {
-      case "Escape": this.close(); return; // bubbles on: row-level editors treat it as cancel
+      // An open popup owns Escape: close it and stop there, so the dialog or row
+      // editor around us is not dismissed too (Radzen's own popups behave the same).
+      // With the popup closed, Escape on the trigger bubbles as usual.
+      case "Escape": e.stopPropagation(); this.close(); return;
       case "ArrowDown": e.preventDefault(); if (n || min < 0) move(this._highlight >= n - 1 || this._highlight < min ? min : this._highlight + 1); return;
       case "ArrowUp": e.preventDefault(); if (n || min < 0) move(this._highlight <= min ? Math.max(min, n - 1) : this._highlight - 1); return;
       case "Home": e.preventDefault(); move(min); return;

@@ -7,6 +7,7 @@ a single ES module, no build step, no dependencies — for picking from long lis
 - **virtualised**: ~14 rows in the DOM whether the list has 50 rows or 50,000;
 - **token-AND search**: `pseudo mdr` finds rows where *each* word matches *some* field (label, description, badge, or hidden search atoms);
 - **commit, don't preview**: arrowing through rows highlights; only Enter or a click commits;
+- **Escape belongs to the open popup**: it closes the popup and stops there, so a surrounding dialog or row editor is not dismissed too;
 - **top-layer popup** (Popover API): escapes `overflow: hidden`, `transform`ed ancestors, dialogs and grids;
 - **plain JSON in, plain JSON out**, so a Blazor app, a Svelte widget and a static page all drive it the same way.
 

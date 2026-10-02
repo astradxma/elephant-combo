@@ -17,6 +17,9 @@ const HOSTS = {
       await p.locator("#open-dialog").click();
       await expect(p.locator(".rz-dialog")).toBeVisible({ timeout: 1000 });
     }).toPass({ timeout: 30_000 });
+    // Radzen arms the dialog's close-on-Escape in a 500 ms setTimeout after opening.
+    // Before that, Escape cannot close the dialog, so a test would pass for free.
+    await p.waitForTimeout(700);
   } },
   "blazor-grid":    { blazor: true, open: (p, u) => p.goto(`${u.blazorURL}/grid`) },
 };
