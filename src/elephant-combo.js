@@ -4,13 +4,16 @@
 // Two JSON contracts, and nothing else crosses the boundary:
 //
 //   options    [{ id, label, description?, atoms?: [string], ghost?: bool,
-//                 swatch?: css-colour, badges?: [text | { text, tone? }], data?: any }]
+//                 swatch?: css-colour, badges?: [text | { text, tone? }], href?: url, data?: any }]
 //              `id` is what gets selected — a case id, an option guid, a CSV row
 //              name. `atoms` are extra search terms that never render (a strain's
 //              organism, aliases, vendor lot…). `swatch` and `badges` are the
 //              JSON-only formatting (tone: green|red|blue|amber|gray); badge text
 //              is searchable, because it is visible. `data` is carried untouched
-//              for `renderOption`. `{ value, label }` rows from the CSV-source
+//              for `renderOption`. `href` makes a picked value openable: the trigger
+//              and each chip get a ↗ link (config `linkTarget`, default "_top" so a
+//              link inside an embedded surface navigates the whole page; cmd-click
+//              still opens a tab). `{ value, label }` rows from the CSV-source
 //              endpoint are accepted and normalised.
 //
 // Custom formatting beyond that is a JS property, not JSON:
@@ -35,6 +38,7 @@
 //   search       URL or (q, signal) => Promise<{options, hasMore}> for sources too
 //                large to inline. Results are filtered by the same token rule.
 //   placeholder  trigger text when nothing is selected.
+//   linkTarget   target for `href` links (default "_top").
 //
 // Matching: whitespace-tokenised AND, case-insensitive; each token must be a
 // substring of ONE field (label, description or an atom) — never straddling two.
@@ -58,6 +62,7 @@ export function normalizeOption(o) {
   if (Array.isArray(o.badges) && o.badges.length) {
     looks.badges = o.badges.map((b) => (typeof b === "string" ? { text: b, tone: null } : { text: String(b.text), tone: b.tone ?? null }));
   }
+  if (o.href) looks.href = String(o.href);
   if (o.data !== undefined) looks.data = o.data;
   if (o.id == null && o.value != null) {
     // CSV-source row: value = committed name, label = description-or-name.
@@ -91,6 +96,7 @@ export function normalizeConfig(cfg) {
     search: cfg?.search ?? null,
     placeholder: cfg?.placeholder ?? "Select...",
     limit: cfg?.limit ?? 50,
+    linkTarget: cfg?.linkTarget ?? "_top",
   };
 }
 
@@ -168,6 +174,8 @@ const CSS = `
   color: inherit; background: currentColor; font-size: 11px; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center; }
 .chip button::after { content: "×"; color: white; }
+.open { color: inherit; text-decoration: none; font-size: 0.9em; opacity: 0.7; padding: 0 2px; }
+.open:hover { opacity: 1; }
 .chip.include { color: #16a34a; background: #dcfce7; }
 .chip.exclude { color: #dc2626; background: #fee2e2; }
 .chip.multi { color: #1d4ed8; background: #dbeafe; }
@@ -386,11 +394,15 @@ export class ElephantCombo extends Base {
     this._fetchTimer = setTimeout(async () => {
       let res;
       try {
+        // A newer keystroke aborts the request in flight; the sequence check below
+        // still guards hosts whose search function ignores the signal.
+        this._abort?.abort();
+        const { signal } = (this._abort = new AbortController());
         const s = this._cfg.search;
-        if (typeof s === "function") res = await s(q);
+        if (typeof s === "function") res = await s(q, signal);
         else {
           const sep = s.includes("?") ? "&" : "?";
-          const r = await fetch(`${s}${sep}q=${encodeURIComponent(q)}&limit=${this._cfg.limit}`);
+          const r = await fetch(`${s}${sep}q=${encodeURIComponent(q)}&limit=${this._cfg.limit}`, { signal });
           res = r.ok ? await r.json() : { options: [] };
         }
       } catch { res = { options: [] }; }
@@ -423,10 +435,26 @@ export class ElephantCombo extends Base {
       t.append(ph);
       return;
     }
+    // A ↗ link for a value with an href. Its click must not toggle the popup.
+    const link = (id) => {
+      const href = this._display(id).href;
+      if (!href) return [];
+      const a = document.createElement("a");
+      a.className = "open";
+      a.setAttribute("part", "link");
+      a.href = href;
+      a.target = this._cfg.linkTarget;
+      a.title = "Open";
+      a.textContent = "↗";
+      a.addEventListener("click", (e) => e.stopPropagation());
+      return [a];
+    };
     if (single) {
       const s = document.createElement("span");
+      s.className = "value";
+      s.setAttribute("part", "value");
       s.textContent = this._display(include[0]).label;
-      t.append(s);
+      t.append(s, ...link(include[0]));
       return;
     }
     const tri = this._cfg.states.includes("exclude");
@@ -440,7 +468,7 @@ export class ElephantCombo extends Base {
       b.type = "button";
       b.title = "Remove";
       b.addEventListener("click", (e) => { e.stopPropagation(); this._commit(removeId(this._sel, id), "remove"); });
-      c.append(l, b);
+      c.append(l, ...link(id), b);
       t.append(c);
     };
     for (const id of include) chip(id, tri ? "include" : "multi");
@@ -546,7 +574,7 @@ export class ElephantCombo extends Base {
     const out = {};
     for (const id of [...sel.include, ...sel.exclude]) {
       const o = this._byId.get(id) || this._labels.get(id);
-      if (o) out[id] = { label: o.label, description: o.description ?? null };
+      if (o) out[id] = { label: o.label, description: o.description ?? null, ...(o.href ? { href: o.href } : {}) };
     }
     return out;
   }

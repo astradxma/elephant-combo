@@ -51,7 +51,7 @@
         var labels = new Dictionary<string, ComboItem>(StringComparer.Ordinal);
         foreach (var id in sel.Include.Concat(sel.Exclude))
         {
-            if (_byId.TryGetValue(id, out var o)) labels[id] = new(o.Label, o.Description);
+            if (_byId.TryGetValue(id, out var o)) labels[id] = new(o.Label, o.Description, o.Href);
             else if (Labels?.TryGetValue(id, out var l) == true) labels[id] = l;
         }
         return labels;

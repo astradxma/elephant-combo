@@ -8,7 +8,8 @@ public sealed record ComboOption(
     IReadOnlyList<string>? Atoms = null,
     bool Ghost = false,
     string? Swatch = null,
-    IReadOnlyList<ComboBadge>? Badges = null);
+    IReadOnlyList<ComboBadge>? Badges = null,
+    string? Href = null);
 
 /// <summary>A pill on the right of a row. Tone: green | red | blue | amber | gray.</summary>
 public sealed record ComboBadge(string Text, string? Tone = null);
@@ -30,15 +31,16 @@ public sealed record ComboConfig(
     bool AllowCustom = false,
     string? Placeholder = null,
     string? Search = null,
-    int? Limit = null)
+    int? Limit = null,
+    string? LinkTarget = null)
 {
     public static readonly ComboConfig Single = new(Max: 1);
     public static readonly ComboConfig Multi = new();
     public static readonly ComboConfig TriState = new(States: ["include", "exclude"]);
 }
 
-/// <summary>Display for a selected id.</summary>
-public sealed record ComboItem(string Label, string? Description);
+/// <summary>Display for a selected id. <c>Href</c> renders a ↗ link next to it.</summary>
+public sealed record ComboItem(string Label, string? Description, string? Href = null);
 
 /// <summary>A commit: pick, remove (chip ×) or custom.</summary>
 public sealed record ComboChange(ComboSelection Selection, Dictionary<string, ComboItem> Items, string Reason);

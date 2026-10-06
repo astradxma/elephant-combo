@@ -24,6 +24,7 @@ el.options = [
     swatch: "#16a34a",                       // optional colour dot
     badges: ["MDR", { text: "BSL-2", tone: "amber" }],  // optional pills (searchable)
     ghost: false,                            // "no longer in source" marker
+    href: "/cases/PA-0001",                  // picked values get a ↗ link (config.linkTarget, default "_top")
     data: { anything: "for renderOption" } },
 ];
 el.selection = { include: ["PA-0001"], exclude: [] };   // the same shape in every mode

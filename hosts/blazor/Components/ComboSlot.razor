@@ -23,7 +23,7 @@
     {
         var k = Strains.Kinds.First(k => k.Id == Kind);
         _config = k.Config;
-        _options = Strains.Make(k.Rows);
+        _options = Strains.Make(k.Rows, Kind is "single" or "multi3");
     }
 
     private void OnChange(ComboChange c) => _selection = c.Selection;

@@ -12,6 +12,7 @@ app.UseAntiforgery();
 // The element, served from the repo's src/ — one file, never a copy.
 var combo = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../src/elephant-combo.js"));
 app.MapGet("/js/elephant-combo.js", () => Results.File(combo, "text/javascript"));
+app.MapGet("/api/options", (string? caseType, string? q, int? limit) => Results.Json(ComboHost.Strains.Search(caseType, q, limit)));
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();

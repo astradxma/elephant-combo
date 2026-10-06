@@ -9,8 +9,15 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 const port = Number(process.env.PORT || 8765);
 const types = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json" };
 
+const { serverSearch } = await import("./data.js");
+
 createServer(async (req, res) => {
-  let path = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname));
+  const url = new URL(req.url, "http://x");
+  if (url.pathname === "/api/options") {
+    res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(serverSearch(url.searchParams)));
+    return;
+  }
+  let path = normalize(decodeURIComponent(url.pathname));
   if (path.includes("..")) { res.writeHead(400).end(); return; }
   let file = join(root, path);
   try {

@@ -51,6 +51,11 @@ test("CSV-source {value,label} rows normalise to id + description", () => {
     { id: "EC-001", label: "EC-001", description: "E. coli K12", atoms: [], ghost: false });
   assert.equal(normalizeOption({ value: "X", label: "X" }).description, null);
 });
+test("href passes through; absent href adds no key", () => {
+  assert.equal(normalizeOption({ id: "a", href: "/cases/a" }).href, "/cases/a");
+  assert.equal("href" in normalizeOption({ id: "a" }), false);
+  assert.equal(normalizeConfig({}).linkTarget, "_top");
+});
 test("formatting fields normalise and pass data through", () => {
   const o = normalizeOption({ id: "a", swatch: "teal", badges: ["x", { text: "y", tone: "red" }], data: { n: 1 } });
   assert.deepEqual(o.badges, [{ text: "x", tone: null }, { text: "y", tone: "red" }]);

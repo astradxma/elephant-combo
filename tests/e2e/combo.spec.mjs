@@ -61,7 +61,7 @@ test.describe("single", () => {
     await c.locator(".filter").press("Enter");
     await expect(out(scope, "single")).toHaveText(sel(["KP-0002"]));
     await expect(popupOpen(c)).toHaveCount(0);
-    await expect(c.locator(".trigger")).toHaveText("KP-0002");
+    await expect(c.locator(".trigger .value")).toHaveText("KP-0002");
   });
 
   test("highlight alone does not commit", async ({ scope }) => {
@@ -84,7 +84,7 @@ test.describe("single", () => {
     await openAndType(c, "MY-NEW-STRAIN");
     await c.locator(".row.sentinel").click();
     await expect(out(scope, "custom")).toHaveText(sel(["MY-NEW-STRAIN"]));
-    await expect(c.locator(".trigger")).toHaveText("MY-NEW-STRAIN");
+    await expect(c.locator(".trigger .value")).toHaveText("MY-NEW-STRAIN");
   });
 });
 
@@ -150,10 +150,63 @@ test.describe("placement", () => {
   });
 });
 
+test.describe("server search", () => {
+  test("a loose server answer is narrowed to token-AND, and the url's own params survive", async ({ scope }) => {
+    const c = combo(scope, "server");
+    await openAndType(c, "kleb 0002");      // the server matches "kleb" OR "0002": hundreds of rows
+    await expect(rows(c)).toHaveCount(1);   // the element keeps only rows matching both
+    await row(c, "KP-0002").click();
+    await expect(out(scope, "server")).toHaveText(sel(["KP-0002"]));
+    await expect(c.locator(".trigger .value")).toHaveText("KP-0002");
+    await expect(c.locator(".trigger a.open")).toHaveAttribute("href", "/cases/KP-0002");
+  });
+
+  test("more than the limit says so", async ({ scope }) => {
+    const c = combo(scope, "server");
+    await openAndType(c, "pseudo");
+    await expect(rows(c).first()).toBeVisible();
+    await expect(c.locator(".note")).toHaveText(/keep typing/i);
+  });
+});
+
+test.describe("links", () => {
+  test("a picked value with an href gets a ↗ link that does not open the popup", async ({ scope }) => {
+    const c = combo(scope, "single");
+    await openAndType(c, "PA-0017");
+    await row(c, "PA-0017").click();
+    const a = c.locator(".trigger a.open");
+    await expect(a).toHaveAttribute("href", "/cases/PA-0017");
+    await expect(a).toHaveAttribute("target", "_top");
+    // Cancel the navigation; the click must still not reach the trigger.
+    await a.evaluate((el) => el.addEventListener("click", (e) => e.preventDefault()));
+    await a.click();
+    await expect(popupOpen(c)).toHaveCount(0);
+  });
+
+  test("each chip with an href gets its own link", async ({ scope }) => {
+    const c = combo(scope, "multi3");
+    await openAndType(c, "PA-00");
+    await row(c, "PA-0001").click();
+    await row(c, "PA-0009").click();
+    await c.locator(".filter").press("Escape");
+    await expect(c.locator(".chip a.open")).toHaveCount(2);
+    await expect(c.locator(".chip", { hasText: "PA-0009" }).locator("a.open")).toHaveAttribute("href", "/cases/PA-0009");
+  });
+
+  test("no href, no link", async ({ scope }) => {
+    const c = combo(scope, "tri");
+    await openAndType(c, "PA-0001");
+    await row(c, "PA-0001").click();
+    await c.locator(".filter").press("Escape");
+    await expect(c.locator(".chip")).toHaveCount(1);
+    await expect(c.locator("a.open")).toHaveCount(0);
+  });
+});
+
 test.describe("host integration", () => {
   test("the host can set the selection", async ({ scope }) => {
     await scope.locator('[data-set="single"]').click();
-    await expect(combo(scope, "single").locator(".trigger")).toHaveText("PA-0001");
+    await expect(combo(scope, "single").locator(".trigger .value")).toHaveText("PA-0001");
   });
 
   test("the host can replace the options", async ({ scope }) => {
@@ -172,7 +225,7 @@ test.describe("host integration", () => {
     await scope.locator('[data-bump="single"]').click();
     await scope.locator('[data-bump="single"]').click();
     await expect(scope.locator('[data-bump="single"]')).toHaveText("bump 2");
-    await expect(c.locator(".trigger")).toHaveText("PA-0017");
+    await expect(c.locator(".trigger .value")).toHaveText("PA-0017");
     await expect(out(scope, "single")).toHaveText(sel(["PA-0017"]));
   });
 

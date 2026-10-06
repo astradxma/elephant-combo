@@ -31,7 +31,7 @@
     host.append(slot);
     const el = slot.querySelector("elephant-combo"), out = slot.querySelector("pre");
     const show = (sel) => { out.textContent = JSON.stringify(sel); };
-    el.config = config; el.options = strains(n); show(el.selection);
+    el.config = config; el.options = strains(n, id === "single" || id === "multi3"); show(el.selection);
     el.addEventListener("combo-change", (e) => show(e.detail.selection));
     // Host-driven changes, as a framework would make them.
     slot.querySelector("[data-set]").onclick = () => { el.selection = { include: ["PA-0001"], exclude: [] }; show(el.selection); };

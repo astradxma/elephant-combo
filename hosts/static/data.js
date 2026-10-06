@@ -7,11 +7,12 @@ export const ORGS = [
 ];
 export const SOURCES = ["ATCC", "DSMZ", "CDC AR Bank", "clinical isolate", "in-house", "NCTC", "BEI"];
 
-export function strains(n) {
+// `withHref` gives each row a link, as a case source would.
+export function strains(n, withHref = false) {
   return Array.from({ length: n }, (_, i) => {
     const [code, org] = ORGS[i % ORGS.length];
     const num = String(i + 1).padStart(4, "0");
-    return { id: `${code}-${num}`, label: `${code}-${num}`, description: `${org} · ${SOURCES[i % SOURCES.length]}`, atoms: [`${code}${num}`] };
+    return { id: `${code}-${num}`, label: `${code}-${num}`, description: `${org} · ${SOURCES[i % SOURCES.length]}`, atoms: [`${code}${num}`], ...(withHref ? { href: `/cases/${code}-${num}` } : {}) };
   });
 }
 
@@ -22,4 +23,18 @@ export const KINDS = [
   ["multi3", { max: 3, placeholder: "Up to 3…" }, 1000],
   ["tri", { states: ["include", "exclude"], placeholder: "Filter…" }, 1800],
   ["excl", { states: ["exclude"], placeholder: "Exclude…" }, 1000],
+  // No inline rows: everything comes from the search route, which also checks
+  // that a param already in the URL (caseType) survives the element adding q/limit.
+  ["server", { max: 1, search: "/api/options?caseType=strain-lot", placeholder: "Search…" }, 0],
 ];
+
+// What /api/options answers (both hosts): deliberately LOOSE — any token on any
+// field — so the tests can see the element narrow it back to token-AND.
+export function serverSearch(params) {
+  if (params.get("caseType") !== "strain-lot") return { options: [], hasMore: false };
+  const tokens = (params.get("q") || "").toLowerCase().split(/\s+/).filter(Boolean);
+  const limit = Number(params.get("limit") || 50);
+  const hits = strains(5000, true).filter((o) =>
+    tokens.some((t) => o.label.toLowerCase().includes(t) || o.description.toLowerCase().includes(t)));
+  return { options: hits.slice(0, limit), hasMore: hits.length > limit };
+}

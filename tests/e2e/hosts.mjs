@@ -24,11 +24,12 @@ const HOSTS = {
   "blazor-grid":    { blazor: true, open: (p, u) => p.goto(`${u.blazorURL}/grid`) },
 };
 
-// Interactive once the circuit has delivered options to every combo (options
-// only ever arrive over JS interop, after the prerendered HTML).
-async function waitForCircuit(scope, n) {
+// Interactive once the circuit has delivered options to the five inline combos
+// (options only ever arrive over JS interop, after the prerendered HTML; the
+// server-search combo has none by design).
+async function waitForCircuit(scope) {
   await expect.poll(() => scope.locator("elephant-combo").evaluateAll((els) =>
-    els.length && els.every((e) => e.options.length > 0) ? els.length : 0), { timeout: 30_000 }).toBeGreaterThan(n ?? 0);
+    els.filter((e) => e.options.length > 0).length), { timeout: 30_000 }).toBe(5);
 }
 
 export const test = base.extend({
@@ -39,7 +40,7 @@ export const test = base.extend({
   scope: async ({ page, hostInfo, staticURL, blazorURL }, use) => {
     await hostInfo.open(page, { staticURL, blazorURL });
     const scope = hostInfo.frame ? page.frameLocator(hostInfo.frame) : page;
-    await waitForCircuit(scope, 4);
+    await waitForCircuit(scope);
     await use(scope);
   },
 });
