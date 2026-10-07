@@ -179,6 +179,32 @@ test.describe("server search", () => {
   });
 });
 
+test.describe("search failures", () => {
+  test("a refused search shows the endpoint's reason, not \"No matches\"", async ({ scope }) => {
+    const c = combo(scope, "refused");
+    await openAndType(c, "kleb");
+    const note = c.locator(".note");
+    await expect(note).toHaveText("Search failed: Case type 'unsearchable' declares no summary.search: descriptor.");
+    await expect(note).toHaveClass(/error/);
+    await expect(note).toHaveAttribute("role", "alert");
+  });
+
+  test("an empty answer from a working search still says No matches", async ({ scope }) => {
+    const c = combo(scope, "server");
+    await openAndType(c, "zzzz");
+    await expect(c.locator(".note")).toHaveText("No matches");
+    await expect(c.locator(".note")).not.toHaveClass(/error/);
+  });
+
+  test("clearing the filter clears the failure", async ({ scope }) => {
+    const c = combo(scope, "refused");
+    await openAndType(c, "kleb");
+    await expect(c.locator(".note")).toHaveClass(/error/);
+    await c.locator(".filter").fill("");
+    await expect(c.locator(".note.error")).toHaveCount(0);
+  });
+});
+
 test.describe("links", () => {
   test("a picked value with an href gets a ↗ link that does not open the popup", async ({ scope }) => {
     const c = combo(scope, "single");

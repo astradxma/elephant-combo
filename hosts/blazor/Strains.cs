@@ -30,13 +30,13 @@ public static class Strains
         ("tri", new ComboConfig(States: ["include", "exclude"], Placeholder: "Filter…"), 1800),
         ("excl", new ComboConfig(States: ["exclude"], Placeholder: "Exclude…"), 1000),
         ("server", new ComboConfig(Max: 1, Search: "/api/options?caseType=strain-lot", Placeholder: "Search…"), 0),
+        ("refused", new ComboConfig(Max: 1, Search: "/api/options?caseType=unsearchable", Placeholder: "Search…"), 0),
     ];
 
     // Mirror of serverSearch in data.js: deliberately loose (any token, any field).
     static readonly IReadOnlyList<ComboOption> Searchable = Make(5000, withHref: true);
     public static object Search(string? caseType, string? q, int? limit)
     {
-        if (caseType != "strain-lot") return new { options = Array.Empty<ComboOption>(), hasMore = false };
         var tokens = (q ?? "").ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var take = limit ?? 50;
         var hits = Searchable.Where(o => tokens.Any(t =>

@@ -37,6 +37,9 @@
 //   allowCustom  single only: a "✚ Use …" row commits the typed text as the id.
 //   search       URL or (q, signal) => Promise<{options, hasMore}> for sources too
 //                large to inline. Results are filtered by the same token rule.
+//                A failed search is SHOWN, never passed off as "No matches": a
+//                non-2xx answer's `{ errors: [..] }` (or `error`/`detail`/`title`,
+//                or its text) — or a rejected promise's message — becomes the note.
 //   placeholder  trigger text when nothing is selected.
 //   linkTarget   target for `href` links (default "_top").
 //
@@ -98,6 +101,19 @@ export function normalizeConfig(cfg) {
     limit: cfg?.limit ?? 50,
     linkTarget: cfg?.linkTarget ?? "_top",
   };
+}
+
+// The reason a search endpoint gave for refusing, as one line.
+async function failureText(r) {
+  let text = "";
+  try { text = await r.text(); } catch { /* body unreadable */ }
+  try {
+    const j = JSON.parse(text);
+    const msg = Array.isArray(j?.errors) ? j.errors.join("; ") : j?.error || j?.detail || j?.title;
+    if (msg) return String(msg);
+  } catch { /* not JSON */ }
+  const plain = text.trim().replace(/\s+/g, " ");
+  return plain && plain.length <= 200 ? plain : `HTTP ${r.status}`;
 }
 
 export function tokenize(q) {
@@ -212,6 +228,7 @@ const CSS = `
 .badge.blue { color: #1e40af; background: #dbeafe; } .badge.amber { color: #92400e; background: #fef3c7; }
 .ghost { color: #c00; margin-left: 4px; font-size: 0.8em; }
 .note { padding: 8px 12px; color: var(--ec-muted, #888); font-style: italic; font-size: 0.9em; }
+.note.error { color: var(--ec-error, #b91c1c); font-style: normal; }
 `;
 
 // Node (the unit tests) has no DOM; the pure core above must still import.
@@ -232,6 +249,7 @@ export class ElephantCombo extends Base {
     this._filter = "";
     this._view = [];
     this._hasMore = false;
+    this._error = null; // why the last server search failed, shown instead of "No matches"
     this._highlight = -2; // -1 = custom sentinel, -2 = none, ≥0 = view row
     this._fetchSeq = 0;
 
@@ -381,6 +399,7 @@ export class ElephantCombo extends Base {
     } else {
       this._view = filterIndex(this._index, this._filter);
       this._hasMore = false;
+      this._error = null;
     }
     if (resetHighlight) {
       this._highlight = this._cfg.allowCustom ? -1 : (this._view.length ? 0 : -2);
@@ -394,7 +413,7 @@ export class ElephantCombo extends Base {
     const seq = ++this._fetchSeq;
     const q = this._filter.trim();
     this._fetchTimer = setTimeout(async () => {
-      let res;
+      let res, error = null;
       try {
         // A newer keystroke aborts the request in flight; the sequence check below
         // still guards hosts whose search function ignores the signal.
@@ -405,10 +424,16 @@ export class ElephantCombo extends Base {
         else {
           const sep = s.includes("?") ? "&" : "?";
           const r = await fetch(`${s}${sep}q=${encodeURIComponent(q)}&limit=${this._cfg.limit}`, { signal });
-          res = r.ok ? await r.json() : { options: [] };
+          if (r.ok) res = await r.json();
+          else { error = await failureText(r); res = { options: [] }; }
         }
-      } catch { res = { options: [] }; }
+      } catch (e) {
+        if (e?.name === "AbortError") return; // superseded by a newer keystroke
+        error = e?.message || String(e);
+        res = { options: [] };
+      }
       if (seq !== this._fetchSeq || !this._open) return;
+      this._error = error;
       const remote = (Array.isArray(res) ? res : res.options || []).map(normalizeOption).filter(Boolean);
       for (const o of remote) if (!this._labels.has(o.id)) this._labels.set(o.id, o);
       // Same token rule on what the server returned, so both paths agree.
@@ -545,9 +570,12 @@ export class ElephantCombo extends Base {
     }
     this._spacer.replaceChildren(frag);
 
-    const note = !view.length && !cfg.allowCustom ? "No matches"
+    const note = this._error ? `Search failed: ${this._error}`
+      : !view.length && !cfg.allowCustom ? "No matches"
       : this._hasMore ? "More matches — keep typing to narrow" : "";
     this._note.hidden = !note;
+    this._note.classList.toggle("error", !!this._error);
+    this._note.setAttribute("role", this._error ? "alert" : "status");
     this._note.textContent = note;
     this._place();
   }

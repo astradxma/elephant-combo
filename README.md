@@ -42,7 +42,7 @@ The mode is `config`, not a component swap:
 | multi, at most 3 | `{ max: 3 }` |
 | include + exclude (click cycles neutral → + → − → neutral) | `{ states: ["include", "exclude"] }` |
 | exclude only ("everything except…") | `{ states: ["exclude"] }` |
-| server-side search for huge sources | `{ search: "/api/options" }` or `{ search: (q, signal) => Promise<{ options, hasMore }> }` |
+| server-side search for huge sources | `{ search: "/api/options" }` or `{ search: (q, signal) => Promise<{ options, hasMore }> }`. A refused search (non-2xx `{ errors: [...] }`, or a rejected promise) is shown in the popup, never passed off as "No matches" |
 
 Commits fire `combo-change` with `detail: { selection, items, reason }` — `items` maps the
 selected ids to `{ label, description }`, `reason` is `pick`, `remove` or `custom`.

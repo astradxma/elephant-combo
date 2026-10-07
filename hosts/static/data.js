@@ -26,12 +26,20 @@ export const KINDS = [
   // No inline rows: everything comes from the search route, which also checks
   // that a param already in the URL (caseType) survives the element adding q/limit.
   ["server", { max: 1, search: "/api/options?caseType=strain-lot", placeholder: "Search…" }, 0],
+  // A type the route refuses (as Elephant's /cases/options does without summary.search:).
+  ["refused", { max: 1, search: "/api/options?caseType=unsearchable", placeholder: "Search…" }, 0],
 ];
+
+// A route refusal, shaped like Elephant's CaseApiError — or null when the request is fine.
+export function searchRefusal(params) {
+  const type = params.get("caseType");
+  return type === "strain-lot" ? null
+    : { status: 400, body: { errors: [`Case type '${type}' declares no summary.search: descriptor.`] } };
+}
 
 // What /api/options answers (both hosts): deliberately LOOSE — any token on any
 // field — so the tests can see the element narrow it back to token-AND.
 export function serverSearch(params) {
-  if (params.get("caseType") !== "strain-lot") return { options: [], hasMore: false };
   const tokens = (params.get("q") || "").toLowerCase().split(/\s+/).filter(Boolean);
   const limit = Number(params.get("limit") || 50);
   const hits = strains(5000, true).filter((o) =>

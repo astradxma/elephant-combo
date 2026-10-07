@@ -9,11 +9,13 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 const port = Number(process.env.PORT || 8765);
 const types = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json" };
 
-const { serverSearch } = await import("./data.js");
+const { serverSearch, searchRefusal } = await import("./data.js");
 
 createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   if (url.pathname === "/api/options") {
+    const refused = searchRefusal(url.searchParams);
+    if (refused) { res.writeHead(refused.status, { "content-type": "application/json" }).end(JSON.stringify(refused.body)); return; }
     res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(serverSearch(url.searchParams)));
     return;
   }
