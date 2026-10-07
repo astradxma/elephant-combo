@@ -64,6 +64,16 @@ test.describe("single", () => {
     await expect(c.locator(".trigger .value")).toHaveText("KP-0002");
   });
 
+  test("after a mouse click, typing goes straight into the filter", async ({ scope, page }) => {
+    const c = combo(scope, "single");
+    await c.click();
+    await expect(popupOpen(c)).toHaveCount(1);
+    await page.waitForTimeout(150); // past the next frame, where a host page could steal focus
+    await page.keyboard.type("kleb 0002");
+    await expect(c.locator(".filter")).toHaveValue("kleb 0002");
+    await expect(rows(c)).toHaveCount(1);
+  });
+
   test("highlight alone does not commit", async ({ scope }) => {
     const c = combo(scope, "single");
     await openAndType(c, "kleb 0002");
