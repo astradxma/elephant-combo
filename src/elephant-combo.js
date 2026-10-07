@@ -168,7 +168,7 @@ const CSS = `
 .caret { position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
   color: var(--ec-muted, #888); font-size: 12px; pointer-events: none; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 999px;
-  font-size: 12px; line-height: 1.4; max-width: 180px; border: 1px solid currentColor; }
+  font-size: 12px; line-height: 1.4; max-width: 180px; border: 1px solid; }
 .chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip button { width: 16px; height: 16px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
   color: inherit; background: currentColor; font-size: 11px; line-height: 1;
@@ -176,10 +176,11 @@ const CSS = `
 .chip button::after { content: "×"; color: white; }
 .open { color: inherit; text-decoration: none; font-size: 0.9em; opacity: 0.7; padding: 0 2px; }
 .open:hover { opacity: 1; }
-.chip.include { color: #16a34a; background: #dcfce7; }
-.chip.exclude { color: #dc2626; background: #fee2e2; }
-.chip.multi { color: #1d4ed8; background: #dbeafe; }
+.chip.include { color: #16a34a; background: #dcfce7; border-color: #16a34a33; }
+.chip.exclude { color: #dc2626; background: #fee2e2; border-color: #dc262633; }
+.chip.multi { color: #1d4ed8; background: #dbeafe; border-color: #1d4ed833; }
 .popup { position: fixed; inset: auto; margin: 0; padding: 0; min-width: 260px; max-width: 600px;
+  box-sizing: border-box; /* the min-width includes the border, as on Bootstrap pages */
   background: var(--ec-bg, white); color: var(--ec-fg, inherit);
   border: 1px solid var(--ec-border, #cbd5e0); border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.12); flex-direction: column; cursor: default; }
@@ -366,8 +367,9 @@ export class ElephantCombo extends Base {
     const below = vh - r.bottom, above = r.top;
     const top = below < h + 4 && above > below ? Math.max(4, r.top - h - 2) : r.bottom + 2;
     const left = Math.max(4, Math.min(r.left, vw - p.offsetWidth - 4));
-    p.style.top = `${top}px`;
-    p.style.left = `${left}px`;
+    // Whole pixels: a fractional top blurs 1px borders and text.
+    p.style.top = `${Math.round(top)}px`;
+    p.style.left = `${Math.round(left)}px`;
   }
 
   // ── filtering ──
